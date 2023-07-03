@@ -1,0 +1,37 @@
+kind: BuildConfig
+apiVersion: build.openshift.io/v1
+metadata:
+  name: app-name
+  labels:
+    build: app-name
+spec:
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'app-name:latest'
+  resources: {}
+  successfulBuildsHistoryLimit: 5
+  failedBuildsHistoryLimit: 5
+  strategy:
+    type: Source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        namespace: openshift
+        name: 'ubi8-openjdk-11:1.12'
+      env:
+        - name: S2I_DELETE_SOURCE
+          value: 'false'
+  postCommit: {}
+  source:
+    type: Binary
+    binary: {}
+  triggers:
+    - type: GitHub
+      github:
+        secret: Hc670SCn-AezmLGdJsbb
+    - type: Generic
+      generic:
+        secret: PrMDh4aG_GclOgAVUa-c
+  runPolicy: Serial

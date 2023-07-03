@@ -1,0 +1,19 @@
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+metadata:
+  name: open-liberty
+  namespace: openshift
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+    - name: kernel-slim-java11-openj9-ubi
+      annotations: null
+      from:
+        kind: DockerImage
+        name: 'icr.io/appcafe/open-liberty:kernel-slim-java11-openj9-ubi'
+      importPolicy:
+        importMode: Legacy
+      referencePolicy:
+        type: Source
+
