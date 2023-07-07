@@ -25,8 +25,8 @@ spec:
           value: 'false'
   postCommit: {}
   source:
-    type: Binary
-    binary: {}
+    git:
+      uri: https://github.com/SaulVazquezRedHat/deployment-getting-started-open-liberty.git
   triggers:
     - type: GitHub
       github:
