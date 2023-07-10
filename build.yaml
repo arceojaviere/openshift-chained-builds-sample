@@ -1,0 +1,134 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: "build-template"
+  annotations:
+    description: "Build template for the demo getting started application"
+    tags: "build"
+objects:
+  # ImageStream de imagen de Open Liberty de IBM
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: open-liberty
+      namespace: openshift
+    spec:
+      lookupPolicy:
+        local: false
+      tags:
+        - name: kernel-slim-java11-openj9-ubi
+          annotations: null
+          from:
+            kind: DockerImage
+            name: 'icr.io/appcafe/open-liberty:kernel-slim-java11-openj9-ubi'
+          importPolicy:
+            importMode: Legacy
+          referencePolicy:
+            type: Source
+  # ImageStream de imagen base de construcción
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: app-name
+    labels:
+        build: app-name
+    spec:
+      lookupPolicy:
+        local: false
+  # ImageStream de imagen base runtime (para despliegue)
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: app-name-runtime
+    labels:
+        build: app-name-runtime
+    spec:
+      lookupPolicy:
+        local: false
+  # BuildConfig de imagen de construcción
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: app-name
+      labels:
+        build: app-name
+    spec:
+      nodeSelector: null
+      output:
+        to:
+          kind: ImageStreamTag
+          name: 'app-name:latest'
+      resources: {}
+      successfulBuildsHistoryLimit: 5
+      failedBuildsHistoryLimit: 5
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            namespace: openshift
+            name: 'ubi8-openjdk-11:1.12'
+          env:
+            - name: S2I_DELETE_SOURCE
+              value: 'false'
+      postCommit: {}
+      source:
+        git:
+          uri: https://github.com/SaulVazquezRedHat/deployment-getting-started-open-liberty.git
+      triggers:
+        - type: GitHub
+          github:
+            secret: Hc670SCn-AezmLGdJsbb
+        - type: Generic
+          generic:
+            secret: PrMDh4aG_GclOgAVUa-c
+      runPolicy: Serial
+  # BuildConfig de imagen runtime
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: app-name-runtime
+    spec:
+      nodeSelector: null
+      output:
+        to:
+          kind: ImageStreamTag
+          name: 'app-name-runtime:latest'
+      resources: {}
+      successfulBuildsHistoryLimit: 5
+      failedBuildsHistoryLimit: 5
+      strategy:
+        type: Docker
+        dockerStrategy:
+          from:
+            kind: ImageStreamTag
+            namespace: openshift
+            name: 'open-liberty:kernel-slim-java11-openj9-ubi'
+      postCommit: {}
+      source:
+        type: Dockerfile
+        dockerfile: |-
+          FROM open-liberty:kernel-slim-java11-openj9-ubi
+          COPY --chown=1001:0 src/src/main/liberty/config /config
+          RUN features.sh
+          COPY --chown=1001:0 src/target/*.war /config/apps
+          RUN configure.sh
+        images:
+          - from:
+              kind: ImageStreamTag
+              name: 'app-name:latest'
+            paths:
+              - sourcePath: /tmp/src
+                destinationDir: .
+      triggers:
+        - type: ImageChange
+          imageChange: {}
+        - type: ImageChange
+          imageChange:
+            from:
+              kind: ImageStreamTag
+              name: 'app-name:latest'
+      runPolicy: Serial
+parameters:
+- description: The application name
+  name: APP_NAME
