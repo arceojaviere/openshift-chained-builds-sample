@@ -74,6 +74,7 @@ objects:
       source:
         git:
           uri: https://github.com/SaulVazquezRedHat/deployment-getting-started-open-liberty.git
+          ref: "main"
       triggers:
         - type: GitHub
           github:
